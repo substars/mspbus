@@ -23,29 +23,9 @@ class Stop < ActiveRecord::Base
 
   def self.search(params)
 
-    found_address = true
-
-    if params[:q].present? then
-      search_term=params[:q].split(" ").join("+")
-      begin
-        Timeout::timeout(2) do
-          response = HTTParty.get("http://maps.googleapis.com/maps/api/geocode/json?address=#{search_term}&sensor=true")
-          if not response['results'].blank?
-            params[:lat]=response['results'][0]['geometry']['location']['lat']
-            params[:lon]=response['results'][0]['geometry']['location']['lng']
-          else
-            found_address = false 
-          end
-        end
-      rescue Timeout::Error
-
-      end
-    end
-
-
     tire.search(page: params[:page], per_page: 40) do
       filter :geo_distance, location: "#{params[:lat]},#{params[:lon]}", distance: "#{params[:radius]}mi"
-      if !found_address
+      if params[:lat].blank?
         query { string params[:q], default_operator: "AND" } if params[:q].present?
       end
       sort do
